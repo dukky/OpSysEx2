@@ -1,0 +1,1 @@
+cmd_/home/user/ex2/charDeviceDriver.ko := ld -r -m elf_x86_64 -T ./scripts/module-common.lds --build-id  -o /home/user/ex2/charDeviceDriver.ko /home/user/ex2/charDeviceDriver.o /home/user/ex2/charDeviceDriver.mod.o
