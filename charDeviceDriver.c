@@ -113,10 +113,11 @@ void cleanup_module(void)
 static int device_open(struct inode *inode, struct file *file)
 {
 
+		printk(KERN_INFO "Device open:%d\n", Device_Open);
     mutex_lock (&devLock);
     if (Device_Open) {
-	mutex_unlock (&devLock);
-	return -EBUSY;
+			mutex_unlock (&devLock);
+			return -EBUSY;
     }
     Device_Open++;
     mutex_unlock (&devLock);
@@ -130,7 +131,7 @@ static int device_open(struct inode *inode, struct file *file)
 /* Called when a process closes the device file. */
 static int device_release(struct inode *inode, struct file *file)
 {
-    mutex_lock (&devLock);
+	mutex_lock (&devLock);
 	Device_Open--;		/* We're now ready for our next caller */
 	mutex_unlock (&devLock);
 	/*
@@ -183,18 +184,21 @@ device_write(struct file *filp, const char *buff, size_t len, loff_t * off)
 	int bytes_read;
 	int ret;
 	if(kfifo_avail(&message_buffer) < len) {
+		printk(KERN_INFO "Not enough space in message buffer");
 		return -EAGAIN;
 	} else if(len > BUF_LEN) {
+		printk(KERN_INFO "Message too long");
 		return -EINVAL;
 	} else {
 		ret = kfifo_from_user(&message_buffer, buff, len, &bytes_read);
 		if (ret !=0 || len != bytes_read) {
-			printk(KERN_ERR "Error in kfifo_from_user");
+			printk(KERN_INFO "Error in kfifo_from_user");
 			return -EAGAIN;
 		} else {
 			// Success reading
 			kfifo_in(&message_size_buffer, &bytes_read, 4);
-			return SUCCESS;
+			printk(KERN_INFO "Successfull");
+			return bytes_read;
 		}
 
 	}
