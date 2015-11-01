@@ -22,13 +22,15 @@ __attribute__((section("__versions"))) = {
 	{ 0x6bc3fbc0, __VMLINUX_SYMBOL_STR(__unregister_chrdev) },
 	{ 0x97868aef, __VMLINUX_SYMBOL_STR(__kfifo_alloc) },
 	{ 0xa45c2cda, __VMLINUX_SYMBOL_STR(__register_chrdev) },
-	{ 0xc3aaf0a9, __VMLINUX_SYMBOL_STR(__put_user_1) },
+	{ 0x4578f528, __VMLINUX_SYMBOL_STR(__kfifo_to_user) },
+	{ 0x13d0adf7, __VMLINUX_SYMBOL_STR(__kfifo_out) },
+	{ 0x27e1a049, __VMLINUX_SYMBOL_STR(printk) },
+	{ 0xf23fcb99, __VMLINUX_SYMBOL_STR(__kfifo_in) },
+	{ 0x30a80826, __VMLINUX_SYMBOL_STR(__kfifo_from_user) },
 	{ 0x2da1b818, __VMLINUX_SYMBOL_STR(try_module_get) },
-	{ 0x91715312, __VMLINUX_SYMBOL_STR(sprintf) },
 	{ 0x5b9b795c, __VMLINUX_SYMBOL_STR(module_put) },
 	{ 0xd7804f5e, __VMLINUX_SYMBOL_STR(mutex_unlock) },
 	{ 0x4e9eed93, __VMLINUX_SYMBOL_STR(mutex_lock) },
-	{ 0x27e1a049, __VMLINUX_SYMBOL_STR(printk) },
 	{ 0xbdfb6dbb, __VMLINUX_SYMBOL_STR(__fentry__) },
 };
 
@@ -38,4 +40,4 @@ __attribute__((section(".modinfo"))) =
 "depends=";
 
 
-MODULE_INFO(srcversion, "B22E40510078465767D0CE9");
+MODULE_INFO(srcversion, "6A5581BC2AB720B2DEB2827");

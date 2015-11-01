@@ -29,7 +29,7 @@ DEFINE_MUTEX  (devLock);
 static int counter = 0;
 
 static struct kfifo message_buffer;
-static struct kfifo message_size;
+static struct kfifo message_size_buffer;
 
 static long device_ioctl(struct file *file,	/* see include/linux/fs.h */
 		 unsigned int ioctl_num,	/* number and param for ioctl */
@@ -59,7 +59,7 @@ static long device_ioctl(struct file *file,	/* see include/linux/fs.h */
 int init_module(void)
 {
 	int message_buffer_result;
-	int message_size_result;
+	int message_size_buffer_result;
   Major = register_chrdev(0, DEVICE_NAME, &fops);
 
 	if (Major < 0) {
@@ -75,7 +75,7 @@ int init_module(void)
 	printk(KERN_INFO "Remove the device file and module when done.\n");
 
 	message_buffer_result = kfifo_alloc(&message_buffer, INITIAL_KFIFO_SIZE, GFP_KERNEL);
-	message_size_result = kfifo_alloc(&message_size, INITIAL_KFIFO_SIZE, GFP_KERNEL);
+	message_size_buffer_result = kfifo_alloc(&message_size_buffer, INITIAL_KFIFO_SIZE, GFP_KERNEL);
 
 	// Check if allocating buffers worked
 	if(message_buffer_result !=0) {
@@ -83,7 +83,7 @@ int init_module(void)
 		return -EAGAIN;
 	}
 
-	if(message_size_result !=0) {
+	if(message_size_buffer_result !=0) {
 		printk(KERN_ERR "Error allocating message size buffer\n");
 		return -EAGAIN;
 	}
@@ -99,7 +99,7 @@ void cleanup_module(void)
 	/*  Unregister the device */
 	unregister_chrdev(Major, DEVICE_NAME);
 	kfifo_free(&message_buffer);
-	kfifo_free(&message_size);
+	kfifo_free(&message_size_buffer);
 }
 
 /*
@@ -151,34 +151,24 @@ static ssize_t device_read(struct file *filp,	/* see include/linux/fs.h   */
 			   size_t length,	/* length of the buffer     */
 			   loff_t * offset)
 {
+
 	/*
 	 * Number of bytes actually written to the buffer
 	 */
 	int bytes_read = 0;
+	int message_size;
 
-	/*
-	 * If we're at the end of the message,
-	 * return 0 signifying end of file
-	 */
-	if (*msg_Ptr == 0)
-		return 0;
-
-	/*
-	 * Actually put the data into the buffer
-	 */
-	while (length && *msg_Ptr) {
-
-		/*
-		 * The buffer is in the user data segment, not the kernel
-		 * segment so "*" assignment won't work.  We have to use
-		 * put_user which copies data from the kernel data segment to
-		 * the user data segment.
-		 */
-		put_user(*(msg_Ptr++), buffer++);
-
-		length--;
-		bytes_read++;
+	if(kfifo_is_empty(&message_buffer)) {
+		return -EAGAIN;
+	} else {
+		if(kfifo_is_empty(&message_size_buffer)) {
+			printk(KERN_ERR "Message size buffer unexpectly empty\n");
+			return -EAGAIN;
+		}
+		kfifo_out(&message_size_buffer, &message_size, 4);
+		kfifo_to_user(&message_buffer, buffer, message_size, &bytes_read);
 	}
+
 
 	/*
 	 * Most read functions return the number of bytes put into the buffer
@@ -190,6 +180,22 @@ static ssize_t device_read(struct file *filp,	/* see include/linux/fs.h   */
 static ssize_t
 device_write(struct file *filp, const char *buff, size_t len, loff_t * off)
 {
-	printk(KERN_ALERT "Sorry, this operation isn't supported.\n");
-	return -EINVAL;
+	int bytes_read;
+	int ret;
+	if(kfifo_avail(&message_buffer) < len) {
+		return -EAGAIN;
+	} else if(len > BUF_LEN) {
+		return -EINVAL;
+	} else {
+		ret = kfifo_from_user(&message_buffer, buff, len, &bytes_read);
+		if (ret !=0 || len != bytes_read) {
+			printk(KERN_ERR "Error in kfifo_from_user");
+			return -EAGAIN;
+		} else {
+			// Success reading
+			kfifo_in(&message_size_buffer, &bytes_read, 4);
+			return SUCCESS;
+		}
+
+	}
 }
